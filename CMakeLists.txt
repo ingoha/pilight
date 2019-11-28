@@ -6,7 +6,9 @@ project(pilight)
 set(VERSION 8.1.5)
 
 set(MODULESPACK OFF)
-set(CMAKE_BUILD_TYPE Debug)
+if(NOT CMAKE_BUILD_TYPE MATCHES "(Release|Debug)")
+	set(CMAKE_BUILD_TYPE Release)
+endif()
 
 set(CMAKE_SKIP_RULE_DEPENDENCY TRUE)
 set(CPACK_DEB_COMPONENT_INSTALL TRUE)
@@ -157,6 +159,9 @@ if(${git_pos} MATCHES "-1")
 else()
 	add_definitions(-DHASH="${git_ver}-nightly-${git_hash}")
 endif()
+
+string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
+add_definitions(-D${BUILD_TYPE})
 
 file(MD5 ${PROJECT_SOURCE_DIR}/res/pilight.pem md5sum)
 add_definitions(-DPILIGHT_PEM_MD5="${md5sum}")
