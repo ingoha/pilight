@@ -105,7 +105,7 @@ static void *thread(void *param) {
 	char home[] = "home";
 	char none[] = "none";
 	int nrloops = 0, bytes = 0, n = 0, has_server = 0;
-	int has_port = 0, reset = 1, maxfd = 0;
+	int has_port = 0, reset = 1, maxfd = 0, retry = 0;
 	fd_set fdsread;
 	struct timeval timeout;
 	timeout.tv_sec = 1;
@@ -195,27 +195,31 @@ static void *thread(void *param) {
 
 		inet_pton(AF_INET, xnode->server, &serv_addr.sin_addr);
 
+		retry = 0;
 		/* Connect to the server */
 		switch(socket_timeout_connect(xnode->sockfd, (struct sockaddr *)&serv_addr, 3)) {
 			case -1:
 				logprintf(LOG_NOTICE, "could not connect to XBMC/Kodi server @%s", xnode->server);
 				protocol_thread_wait(node, 3, &nrloops);
-				continue;
+				retry = 1;
 			break;
 			case -2:
 				logprintf(LOG_NOTICE, "XBMC/Kodi connection timeout @%s", xnode->server);
 				protocol_thread_wait(node, 3, &nrloops);
-				continue;
+				retry = 1;
 			break;
 			case -3:
 				logprintf(LOG_NOTICE, "Error in XBMC/Kodi socket connection @%s", xnode->server);
 				protocol_thread_wait(node, 3, &nrloops);
-				continue;
+				retry = 1;
 			break;
 			default:
 				createMessage(xnode->server, xnode->port, home, none);
 				reset = 1;
 			break;
+		}
+		if(retry == 1) {
+			continue;
 		}
 
 		struct data_t *xtmp = data;
@@ -394,13 +398,13 @@ void xbmcInit(void) {
 	xbmc->hwtype = API;
 	xbmc->multipleId = 0;
 
-	options_add(&xbmc->options, 'a', "action", OPTION_HAS_VALUE, DEVICES_VALUE, JSON_STRING, NULL, NULL);
-	options_add(&xbmc->options, 'm', "media", OPTION_HAS_VALUE, DEVICES_VALUE, JSON_STRING, NULL, NULL);
-	options_add(&xbmc->options, 's', "server", OPTION_HAS_VALUE, DEVICES_ID, JSON_STRING, NULL, NULL);
-	options_add(&xbmc->options, 'p', "port", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, NULL);
+	options_add(&xbmc->options, "a", "action", OPTION_HAS_VALUE, DEVICES_VALUE, JSON_STRING, NULL, NULL);
+	options_add(&xbmc->options, "m", "media", OPTION_HAS_VALUE, DEVICES_VALUE, JSON_STRING, NULL, NULL);
+	options_add(&xbmc->options, "s", "server", OPTION_HAS_VALUE, DEVICES_ID, JSON_STRING, NULL, NULL);
+	options_add(&xbmc->options, "p", "port", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, NULL);
 
-	options_add(&xbmc->options, 0, "show-media", OPTION_HAS_VALUE, GUI_SETTING, JSON_NUMBER, (void *)1, "^[10]{1}$");
-	options_add(&xbmc->options, 0, "show-action", OPTION_HAS_VALUE, GUI_SETTING, JSON_NUMBER, (void *)1, "^[10]{1}$");
+	options_add(&xbmc->options, "0", "show-media", OPTION_HAS_VALUE, GUI_SETTING, JSON_NUMBER, (void *)1, "^[10]{1}$");
+	options_add(&xbmc->options, "0", "show-action", OPTION_HAS_VALUE, GUI_SETTING, JSON_NUMBER, (void *)1, "^[10]{1}$");
 
 	xbmc->initDev=&initDev;
 	xbmc->threadGC=&threadGC;
@@ -410,7 +414,7 @@ void xbmcInit(void) {
 #if defined(MODULE) && !defined(_WIN32)
 void compatibility(struct module_t *module) {
 	module->name = "xbmc";
-	module->version = "1.7";
+	module->version = "1.8";
 	module->reqversion = "6.0";
 	module->reqcommit = "84";
 }

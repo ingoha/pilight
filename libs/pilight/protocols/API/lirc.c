@@ -76,7 +76,7 @@ static void *thread(void *param) {
 	struct sockaddr_un addr;
 	struct timeval timeout;
 
-	int nrloops = 0, n = -1, bytes = 0;
+	int nrloops = 0, n = -1, bytes = 0, retry = 0;
 	char recvBuff[BUFFER_SIZE];
 	fd_set fdsread;
 	timeout.tv_sec = 1;
@@ -104,25 +104,29 @@ static void *thread(void *param) {
 			addr.sun_family=AF_UNIX;
 			strcpy(addr.sun_path, socket_path);
 
+			retry = 0;
 			/* Connect to the server */
 			switch(socket_timeout_connect(sockfd, (struct sockaddr *)&addr, 3)) {
 				case -1:
 					logprintf(LOG_NOTICE, "could not connect to Lirc socket @%s", socket_path);
 					protocol_thread_wait(node, 3, &nrloops);
-					continue;
+					retry = 1;
 				break;
 				case -2:
 					logprintf(LOG_NOTICE, "Lirc socket timeout @%s", socket_path);
 					protocol_thread_wait(node, 3, &nrloops);
-					continue;
+					retry = 1;
 				break;
 				case -3:
 					logprintf(LOG_NOTICE, "Error in Lirc socket connection @%s", socket_path);
 					protocol_thread_wait(node, 3, &nrloops);
-					continue;
+					retry = 1;
 				break;
 				default:
 				break;
+			}
+			if(retry == 1) {
+				continue;
 			}
 
 			while(loop) {
@@ -247,10 +251,10 @@ void lircInit(void) {
 	lirc->devtype = LIRC;
 	lirc->hwtype = API;
 
-	options_add(&lirc->options, 'c', "code", OPTION_HAS_VALUE, DEVICES_VALUE, JSON_STRING, NULL, NULL);
-	options_add(&lirc->options, 'a', "repeat", OPTION_HAS_VALUE, DEVICES_VALUE, JSON_NUMBER, NULL, "[0-9]");
-	options_add(&lirc->options, 'b', "button", OPTION_HAS_VALUE, DEVICES_VALUE, JSON_STRING, NULL, NULL);
-	options_add(&lirc->options, 'r', "remote", OPTION_HAS_VALUE, DEVICES_ID, JSON_STRING, NULL, NULL);
+	options_add(&lirc->options, "c", "code", OPTION_HAS_VALUE, DEVICES_VALUE, JSON_STRING, NULL, NULL);
+	options_add(&lirc->options, "a", "repeat", OPTION_HAS_VALUE, DEVICES_VALUE, JSON_NUMBER, NULL, "[0-9]");
+	options_add(&lirc->options, "b", "button", OPTION_HAS_VALUE, DEVICES_VALUE, JSON_STRING, NULL, NULL);
+	options_add(&lirc->options, "r", "remote", OPTION_HAS_VALUE, DEVICES_ID, JSON_STRING, NULL, NULL);
 
 #ifndef _WIN32
 	lirc->initDev=&initDev;
@@ -264,7 +268,7 @@ void lircInit(void) {
 #if defined(MODULE) && !defined(_WIN32)
 void compatibility(struct module_t *module) {
 	module->name = "lirc";
-	module->version = "1.9";
+	module->version = "1.10";
 	module->reqversion = "6.0";
 	module->reqcommit = "84";
 }
