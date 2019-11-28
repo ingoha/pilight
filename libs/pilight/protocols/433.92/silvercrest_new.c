@@ -28,7 +28,7 @@
 #include "../protocol.h"
 #include "../../core/binary.h"
 #include "../../core/gc.h"
-#include "silvercrest.h"
+#include "silvercrest_new.h"
 
 // 510-600
 #define PULSE_SILVERCREST_SHORT	550
@@ -112,9 +112,9 @@ static int isSyscodeType1(int syscodetype) {
 }
 
 static int validate(void) {
-	if(silvercrest->rawlen == RAW_LENGTH) {
-		if(silvercrest->raw[silvercrest->rawlen-1] >= (int)(PULSE_SILVERCREST_FOOTER*0.9) &&
-		   silvercrest->raw[silvercrest->rawlen-1] <= (int)(PULSE_SILVERCREST_FOOTER*1.1)) {
+	if(silvercrestNew->rawlen == RAW_LENGTH) {
+		if(silvercrestNew->raw[silvercrestNew->rawlen-1] >= (int)(PULSE_SILVERCREST_FOOTER*0.9) &&
+		   silvercrestNew->raw[silvercrestNew->rawlen-1] <= (int)(PULSE_SILVERCREST_FOOTER*1.1)) {
 			return 0;
 		}
 	}
@@ -124,7 +124,7 @@ static int validate(void) {
 static void createMessage(int *binary, int systemcode, int state, int unit) {
 	int i = 0;
 	char binaryCh[RAW_LENGTH/2];
-	silvercrest->message = json_mkobject();
+	silvercrestNew->message = json_mkobject();
 	if(binary != NULL) {
         	for(i=0;i<RAW_LENGTH/2;i++) {
                 	if(binary[i] == 0) {
@@ -134,14 +134,14 @@ static void createMessage(int *binary, int systemcode, int state, int unit) {
                 	}
         	}
         	binaryCh[RAW_LENGTH/2-1] = '\0';
-        	json_append_member(silvercrest->message, "binary", json_mkstring(binaryCh));
+        	json_append_member(silvercrestNew->message, "binary", json_mkstring(binaryCh));
         }
-	json_append_member(silvercrest->message, "id", json_mknumber(systemcode, 0));
-	json_append_member(silvercrest->message, "unit", json_mknumber(unit, 0));
+	json_append_member(silvercrestNew->message, "id", json_mknumber(systemcode, 0));
+	json_append_member(silvercrestNew->message, "unit", json_mknumber(unit, 0));
 	if(state == 1) {
-		json_append_member(silvercrest->message, "state", json_mkstring("on"));
+		json_append_member(silvercrestNew->message, "state", json_mkstring("on"));
 	} else {
-		json_append_member(silvercrest->message, "state", json_mkstring("off"));
+		json_append_member(silvercrestNew->message, "state", json_mkstring("off"));
 	}
 }
 
@@ -173,8 +173,8 @@ static int parseSystemcode(int *binary) {
 
 static void pulseToBinary(int *binary) {
 	int x = 0;
-	for(x=0; x<silvercrest->rawlen-1; x+=2) {
-		if(silvercrest->raw[x+1] > AVG_PULSE_LENGTH) {
+	for(x=0; x<silvercrestNew->rawlen-1; x+=2) {
+		if(silvercrestNew->raw[x+1] > AVG_PULSE_LENGTH) {
   			binary[x/2] = 0;
 		} else {
   			binary[x/2] = 1;
@@ -214,25 +214,25 @@ static void parseCode(void) {
 static void createZero(int s, int e) {
 	int i;
 	for(i=s;i<=e;i+=2) {
-		silvercrest->raw[i] = PULSE_SILVERCREST_SHORT;
-		silvercrest->raw[i+1] = PULSE_SILVERCREST_LONG;
+		silvercrestNew->raw[i] = PULSE_SILVERCREST_SHORT;
+		silvercrestNew->raw[i+1] = PULSE_SILVERCREST_LONG;
 	}
 }
 
 static void createOne(int s, int e) {
 	int i;
 	for(i=s;i<=e;i+=2) {
-		silvercrest->raw[i] = PULSE_SILVERCREST_LONG;
-		silvercrest->raw[i+1] = PULSE_SILVERCREST_SHORT;
+		silvercrestNew->raw[i] = PULSE_SILVERCREST_LONG;
+		silvercrestNew->raw[i+1] = PULSE_SILVERCREST_SHORT;
 	}
 }
 
 static void createFooter(void) {
-	silvercrest->raw[silvercrest->rawlen-1] = PULSE_SILVERCREST_FOOTER;
+	silvercrestNew->raw[silvercrestNew->rawlen-1] = PULSE_SILVERCREST_FOOTER;
 }
 
 static void clearCode(void) {
-	createZero(0, silvercrest->rawlen-3);
+	createZero(0, silvercrestNew->rawlen-3);
 }
 
 static void createEncryptedData(int encrypteddata) {
@@ -316,7 +316,7 @@ static int createCode(JsonNode *code) {
 		logprintf(LOG_ERR, "silvercrest: invalid unit code range");
 		return EXIT_FAILURE;
 	} else {
-		silvercrest->rawlen = RAW_LENGTH;
+		silvercrestNew->rawlen = RAW_LENGTH;
 		//create all 16 codes used by the remote
 		initAllCodes(systemcode, allcodes);
 		//it is possible to use 4 codes per state
@@ -361,39 +361,39 @@ static void printHelp(void) {
 #if !defined(MODULE) && !defined(_WIN32)
 __attribute__((weak))
 #endif
-void silvercrestInit(void) {
+void silvercrestNewInit(void) {
 
-	protocol_register(&silvercrest);
-	protocol_set_id(silvercrest, "silvercrest");
-	protocol_device_add(silvercrest, "silvercrest", "Silvercrest remote and switches");
-	silvercrest->devtype = SWITCH;
-	silvercrest->hwtype = RF433;
-	silvercrest->txrpt = NORMAL_REPEATS;
-	silvercrest->minrawlen = RAW_LENGTH;
-	silvercrest->maxrawlen = RAW_LENGTH;
-	silvercrest->maxgaplen = (int)(PULSE_SILVERCREST_FOOTER*1.1);
-	silvercrest->mingaplen = (int)(PULSE_SILVERCREST_FOOTER*0.9);
+	protocol_register(&silvercrestNew);
+	protocol_set_id(silvercrestNew, "silvercrest_new");
+	protocol_device_add(silvercrestNew, "silvercrest_new", "Silvercrest remote and switches (new protocol)");
+	silvercrestNew->devtype = SWITCH;
+	silvercrestNew->hwtype = RF433;
+	silvercrestNew->txrpt = NORMAL_REPEATS;
+	silvercrestNew->minrawlen = RAW_LENGTH;
+	silvercrestNew->maxrawlen = RAW_LENGTH;
+	silvercrestNew->maxgaplen = (int)(PULSE_SILVERCREST_FOOTER*1.1);
+	silvercrestNew->mingaplen = (int)(PULSE_SILVERCREST_FOOTER*0.9);
 
-	options_add(&silvercrest->options, "t", "on", OPTION_NO_VALUE, DEVICES_STATE, JSON_STRING, NULL, NULL);
-	options_add(&silvercrest->options, "f", "off", OPTION_NO_VALUE, DEVICES_STATE, JSON_STRING, NULL, NULL);
-	options_add(&silvercrest->options, "u", "unit", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, NULL);
-	options_add(&silvercrest->options, "i", "id", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, NULL);
+	options_add(&silvercrestNew->options, "t", "on", OPTION_NO_VALUE, DEVICES_STATE, JSON_STRING, NULL, NULL);
+	options_add(&silvercrestNew->options, "f", "off", OPTION_NO_VALUE, DEVICES_STATE, JSON_STRING, NULL, NULL);
+	options_add(&silvercrestNew->options, "u", "unit", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, NULL);
+	options_add(&silvercrestNew->options, "i", "id", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, NULL);
 
-	silvercrest->parseCode=&parseCode;
-	silvercrest->createCode=&createCode;
-	silvercrest->printHelp=&printHelp;
-	silvercrest->validate=&validate;
+	silvercrestNew->parseCode=&parseCode;
+	silvercrestNew->createCode=&createCode;
+	silvercrestNew->printHelp=&printHelp;
+	silvercrestNew->validate=&validate;
 }
 
 #if defined(MODULE) && !defined(_WIN32)
 void compatibility(struct module_t *module) {
-	module->name = "silvercrest";
+	module->name = "silvercrestNew";
 	module->version = "0.1";
-	module->reqversion = "8.0";
+	module->reqversion = "8.1.5";
 	module->reqcommit = "84";
 }
 
 void init(void) {
-	silvercrestInit();
+	silvercrestNewInit();
 }
 #endif
