@@ -307,6 +307,7 @@ static void poll_cb(uv_poll_t *req, int status, int events) {
 				sendSync = 1;
 				return;
 			} else {
+        printf("-- %c\n", c[0]);
 				if(c[0] == 'v') {
 					data.startv = 1;
 					data.start = 1;
@@ -372,6 +373,10 @@ static void poll_cb(uv_poll_t *req, int status, int events) {
 							data1->length = 0;
 
 							for(y = 2; y < 2 + x; y++) {
+                printf("++ %c\n", c[0]);
+                if(isNumeric(data.buffer[y]) == -1) {
+                  printf("INVALID STREAM RECEIVED\n");
+                }
 								data1->pulses[data1->length++] = pulses[0];
 								data1->pulses[data1->length++] = pulses[data.buffer[y] - '0'];
 							}
