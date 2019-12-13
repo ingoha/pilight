@@ -374,7 +374,7 @@ static void poll_cb(uv_poll_t *req, int status, int events) {
 
 							for(y = 2; y < 2 + x; y++) {
                 printf("++ %c\n", data.buffer[y]);
-                if(isNumeric(data.buffer[y]) == -1) {
+                if(!(data.buffer[y] >= '0' && data.buffer[y] <= '9')) {
                   printf("INVALID STREAM RECEIVED\n");
                 }
 								data1->pulses[data1->length++] = pulses[0];
