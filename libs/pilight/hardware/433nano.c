@@ -373,7 +373,7 @@ static void poll_cb(uv_poll_t *req, int status, int events) {
 							data1->length = 0;
 
 							for(y = 2; y < 2 + x; y++) {
-                printf("++ %c\n", c[0]);
+                printf("++ %c\n", data.buffer[y]);
                 if(isNumeric(data.buffer[y]) == -1) {
                   printf("INVALID STREAM RECEIVED\n");
                 }
